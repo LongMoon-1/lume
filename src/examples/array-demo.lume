@@ -1,0 +1,46 @@
+var{
+  a: [1, 2, 3]
+  b: [10, 20, 30] limit(0, 5)
+  names: ["张三", "李四"]
+  matrix: [[1,2],[3,4]]
+}
+
+msg{ "a = " + a }
+msg{ "b = " + b }
+msg{ "names = " + names }
+msg{ "matrix = " + matrix }
+
+msg{ "a[0] = " + a[0] }
+msg{ "matrix[1][0] = " + matrix[1][0] }
+
+set{ a[0]: 100 }
+msg{ "修改后 a = " + a }
+
+push(a, 4)
+msg{ "push 后 a = " + a }
+msg{ "len(a) = " + len(a) }
+
+var{
+  last: pop(a)
+}
+msg{ "pop 出来 = " + last }
+msg{ "pop 后 a = " + a }
+
+insert(a, 1, 999)
+msg{ "insert 后 a = " + a }
+
+remove(a, 1)
+msg{ "remove 后 a = " + a }
+
+var{
+  sliced: slice(a, 0, 2)
+}
+msg{ "slice(a,0,2) = " + sliced }
+
+-- for 遍历
+msg{ "遍历 names：" }
+for{
+  n in names{
+    msg{ "- " + n }
+  }
+}

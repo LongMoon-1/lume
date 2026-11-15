@@ -1,0 +1,8 @@
+-- 最简示例
+msg{ "Hello Lume v0.3" }
+
+var{
+  name: "世界"
+}
+
+msg{ "你好，" + name }

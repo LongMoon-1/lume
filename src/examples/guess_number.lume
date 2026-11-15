@@ -1,0 +1,44 @@
+var{
+  secret: rand(1, 100)
+  guess: input=1
+  tries: 7
+  win: 0
+}
+
+msg{ "猜数字：1-100，7 次机会" }
+
+loop{
+  if{ tries == 0 { break } }
+
+  input{
+    id:1
+    min:1
+    max:100
+    "请输入猜测"
+    over: "太大了，不能超过" + max
+    under: "太小了，不能小于" + min
+    invalid: "这不是数字，请重新输入"
+  }
+
+  set{ tries: tries - 1 }
+
+  if{
+    guess == secret{
+      msg{ "猜对了！" }
+      set{ win: 1 }
+      break
+    }
+    else if guess < secret{
+      if{ tries > 0 { msg{ "太小了，还剩 " + tries + " 次" } } }
+    }
+    else{
+      if{ tries > 0 { msg{ "太大了，还剩 " + tries + " 次" } } }
+    }
+  }
+}
+
+if{
+  win == 0{
+    msg{ "结束，答案是 " + secret }
+  }
+}

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>Lume v0.3</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 640px; margin: 60px auto; padding: 0 20px; }
+    pre { background: #f4f4f4; padding: 12px; border-radius: 6px; min-height: 24px; }
+    button { padding: 8px 16px; margin-right: 8px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Lume v0.3</h1>
+  <p>静态页面 + API 演示</p>
+  <button onclick="call('/api/ping')">/api/ping</button>
+  <button onclick="call('/about')">/about</button>
+  <pre id="out">等待…</pre>
+
+  <script>
+    async function call(path) {
+      const out = document.getElementById('out');
+      out.textContent = '请求 ' + path + ' …';
+      try {
+        const r = await fetch(path);
+        const text = await r.text();
+        try {
+          out.textContent = JSON.stringify(JSON.parse(text), null, 2);
+        } catch {
+          out.textContent = text;
+        }
+      } catch (e) {
+        out.textContent = '失败: ' + e.message;
+      }
+    }
+  </script>
+</body>
+</html>

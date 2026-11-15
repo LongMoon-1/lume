@@ -1,0 +1,56 @@
+var{
+  import: "http"
+}
+
+http_route{
+  method: "GET"
+  path: "/"
+  body: "<html><body><h1>Lume v0.3</h1><p>/api/ping /about</p></body></html>"
+  type: "text/html; charset=utf-8"
+}
+
+http_route{
+  method: "GET"
+  path: "/api/ping"
+  body: "{\"ok\":true,\"v\":\"0.3\"}"
+  type: "application/json"
+}
+
+http_route{
+  method: "GET"
+  path: "/about"
+  file: "examples/public/index.html"
+  type: "text/html; charset=utf-8"
+}
+
+http_route{
+  method: "POST"
+  path: "/upload"
+  save: "examples/upload.bin"
+  maxbody: 10485760
+  body: "{\"saved\":true}"
+  type: "application/json"
+}
+
+http_error{
+  status: 404
+  body: "<html><body><h1>404</h1><p>页面不存在</p></body></html>"
+}
+
+http_error{
+  status: 403
+  body: "<html><body><h1>403</h1><p>禁止访问</p></body></html>"
+}
+
+http_static{
+  root: "examples/public"
+  index: "index.html"
+}
+
+http_serve{
+  port: 8080
+  log: true
+  msg{ "服务器在 localhost:" + port + " 开放" }
+  msg{ "静态目录 examples/public" }
+  msg{ "API: /api/ping /about POST /upload" }
+}
