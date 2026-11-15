@@ -1,0 +1,40 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: ./src
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Build lume.exe
+        run: go build -trimpath -ldflags "-s -w" -o lume.exe .
+
+      - name: Build lumerun.exe
+        run: go build -trimpath -ldflags "-s -w" -o lumerun.exe ./cmd/lumerun
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src/lume.exe
+            src/lumerun.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
