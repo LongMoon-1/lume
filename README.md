@@ -4,8 +4,6 @@
 
 [![Build](https://img.shields.io/github/actions/workflow/status/longmoon-1/lume/build.yml?branch=main&style=flat-square)](https://github.com/longmoon-1/lume/actions)
 [![Release](https://img.shields.io/github/v/release/longmoon-1/lume?style=flat-square)](https://github.com/longmoon-1/lume/releases)
-[![License](https://img.shields.io/github/license/longmoon-1/lume?style=flat-square)](LICENSE)
-[![Go](https://img.shields.io/github/go-mod/go-version/longmoon-1/lume?style=flat-square)](src/go.mod)
 
 Lume 是一门以 `关键字{ ... }` 组织代码的交互式脚本语言。内置了输入输出、数组、函数、文件读写和 HTTP 服务器，适用于命令行小游戏、交互式脚本以及简单的本地后端。
 
