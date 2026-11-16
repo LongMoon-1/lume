@@ -10,7 +10,7 @@ import (
 	"top.longmoon/lume/internal/vm"
 )
 
-const version = "0.3.0"
+const version = "0.3.1"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -79,7 +79,7 @@ func waitExit() {
 }
 
 func printUsage() {
-	fmt.Println(`LumeRun v0.3.0 — Lume 字节码运行器
+	fmt.Println(`LumeRun v0.3.1 — Lume 字节码运行器
 用法:
   lumerun <file.lum>     运行字节码文件
   lumerun -v | --version 显示版本
