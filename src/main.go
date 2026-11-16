@@ -2,8 +2,12 @@ package main
 
 import (
 	"bufio"
+	"encoding/hex"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"top.longmoon/lume/internal/bytecode"
@@ -14,7 +18,7 @@ import (
 	"top.longmoon/lume/internal/vm"
 )
 
-const version = "0.3.0"
+const version = "0.3.1"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -42,16 +46,22 @@ func main() {
 			os.Exit(1)
 		}
 		os.Exit(cmdRun(os.Args[2]))
+	case "pack":
+		if len(os.Args) < 3 {
+			fmt.Fprintln(os.Stderr, "用法: lume pack <file.lume | file.lum>")
+			os.Exit(1)
+		}
+		os.Exit(cmdPack(os.Args[2]))
 	}
 
-	// .lum 直接跑：带等待
+	// .lum 直接跑
 	if strings.HasSuffix(arg, ".lum") {
 		code := cmdRun(arg)
 		waitExit()
 		os.Exit(code)
 	}
 
-	// .lume 或其它：内存编译运行，带等待
+	// .lume 或其它：内存编译运行
 	os.Exit(cmdRunSourceFile(arg))
 }
 
@@ -149,13 +159,126 @@ func waitExit() {
 }
 
 func printUsage() {
-	fmt.Println(`Lume v0.3.0 — 块式交互式脚本语言
+	fmt.Println(`Lume v0.3.1 — 块式交互式脚本语言
 用法:
   lume                      进入交互式终端
   lume <file.lume>          编译并运行源码（内存中，不落盘）
   lume <file.lum>           运行字节码文件
   lume build <file.lume>    编译为 .lum
   lume run <file.lum>       运行字节码文件
+  lume pack <file>          将源码或字节码打包为独立可执行文件 (需要安装 Go)
   lume -v | --version       显示版本
   lume -h | --help          显示帮助`)
+}
+
+// ==========================================
+// 打包工具逻辑
+// ==========================================
+
+// 内嵌运行器源码，%s 会被替换为十六进制字节码
+const runnerTemplate = `package main
+
+import (
+	"encoding/hex"
+	"fmt"
+	"os"
+	"top.longmoon/lume/internal/bytecode"
+	"top.longmoon/lume/internal/vm"
+)
+
+var embeddedHex = "%s"
+
+func main() {
+	data, err := hex.DecodeString(embeddedHex)
+	if err != nil {
+		fmt.Printf("内部字节码损坏: %%v\n", err)
+		os.Exit(1)
+	}
+
+	bp, err := bytecode.Decode(data)
+	if err != nil {
+		fmt.Printf("加载失败: %%v\n", err)
+		os.Exit(1)
+	}
+
+	if err := vm.New(bp).Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "\n运行时错误: %%v\n", err)
+	}
+
+	fmt.Print("\n[按Enter关闭]")
+	var b [1]byte
+	os.Stdin.Read(b[:])
+}
+`
+
+func cmdPack(inputFile string) int {
+	ext := filepath.Ext(inputFile)
+	baseName := strings.TrimSuffix(inputFile, ext)
+
+	if ext != ".lume" && ext != ".lum" {
+		fmt.Println("错误: 仅支持 .lume 或 .lum 文件")
+		return 1
+	}
+
+	var bytecodeData []byte
+
+	// 1. 如果是源码，直接在内存里编译
+	if ext == ".lume" {
+		fmt.Printf("[1/3] 正在编译 %s ...\n", inputFile)
+		src, err := os.ReadFile(inputFile)
+		if err != nil {
+			fmt.Printf("错误: 读取失败 %v\n", err)
+			return 1
+		}
+		bp, err := compileSource(string(src))
+		if err != nil {
+			fmt.Printf("错误: 编译失败 %v\n", err)
+			return 1
+		}
+		bytecodeData, _ = bp.Encode()
+	} else {
+		// 已经是 lum，直接读取
+		fmt.Printf("[1/3] 正在读取 %s ...\n", inputFile)
+		data, err := os.ReadFile(inputFile)
+		if err != nil {
+			fmt.Printf("错误: 读取 %s 失败: %v\n", inputFile, err)
+			return 1
+		}
+		bytecodeData = data
+	}
+
+	// 2. 转为十六进制注入模板
+	fmt.Printf("[2/3] 正在注入字节码 ...\n")
+	hexData := hex.EncodeToString(bytecodeData)
+
+	// 注意：必须依赖当前的 internal 目录进行编译
+	// 生成临时文件
+	tmpGoFile := fmt.Sprintf("embedded_runner_%d.go", os.Getpid())
+	runnerCode := fmt.Sprintf(runnerTemplate, hexData)
+	
+	err := os.WriteFile(tmpGoFile, []byte(runnerCode), 0644)
+	if err != nil {
+		fmt.Printf("错误: 写入临时源码失败: %v\n", err)
+		return 1
+	}
+	defer os.Remove(tmpGoFile) // 无论成败，最后删除临时文件
+
+	// 3. 调用 go build
+	outExe := baseName + ".exe"
+	if runtime.GOOS != "windows" {
+		outExe = baseName // macOS / Linux 不需要 .exe
+	}
+	fmt.Printf("[3/3] 正在生成 %s (需要 Go 环境) ...\n", outExe)
+	
+	cmd := exec.Command("go", "build", "-ldflags", "-s -w", "-o", outExe, tmpGoFile)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	
+	if err := cmd.Run(); err != nil {
+		fmt.Println("错误: 打包编译失败，请确保已安装 Go 且在 PATH 中")
+		return 1
+	}
+
+	fmt.Printf("打包成功！产物: %s\n", outExe)
+	return 0
 }
